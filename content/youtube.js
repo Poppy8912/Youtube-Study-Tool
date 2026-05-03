@@ -1,15 +1,18 @@
 console.log("youtube.js loaded");
 
+// Main async wrapper to initialize extension logic
 (async function () {
   try {
+    // Retrieve user settings from Chrome storage
     const settings = await chrome.storage.sync.get({
       enabled: true,
       youtube: true,
       focusMode: false
     });
-
+    // Exit early if extension or Youtube blocking is disabled
     if (!settings.enabled || !settings.youtube) return;
 
+    // Variables
     let focusMode = settings.focusMode;
     let lastUrl = location.href;
     let buttonCheckScheduled = false;
@@ -17,25 +20,30 @@ console.log("youtube.js loaded");
 
     const SHORTS_HOME_URL = "https://www.youtube.com/";
 
+    // Page type helpers
     const isHome = () => location.pathname === "/";
     const isWatch = () => location.pathname === "/watch";
     const isResults = () => location.pathname === "/results";
+    // Detect if URL is a page that contains Shorts
     const isShorts = (url = location.href) => {
       try {
         const parsed = new URL(url, location.origin);
         return parsed.pathname === "/shorts" || parsed.pathname.startsWith("/shorts/");
       } catch {
+        // Fallback for malformed URLs
         return location.pathname === "/shorts" || location.pathname.startsWith("/shorts/");
       }
     };
 
+    // Redirects from Shorts page to homepage
     function redirectShorts() {
       if (!isShorts()) return false;
       location.replace(SHORTS_HOME_URL);
       return true;
     }
 
-    // ---------- STYLE ----------
+    // --------- STYLE SETUP ---------
+    // Ensure just one tag is injected
     let style = document.getElementById("realblocker-style");
     if (!style) {
       style = document.createElement("style");
@@ -43,9 +51,10 @@ console.log("youtube.js loaded");
       document.head.appendChild(style);
     }
 
+    // CSS for Shorts blocking and Focus Mode UI
     function updateStyle() {
       style.textContent = `
-        /* ===== ALWAYS HIDE SHORTS ===== */
+        /* Hide Shorts Content */
         ytd-reel-shelf-renderer,
         ytd-reel-item-renderer,
         ytd-shorts-lockup-view-model,
@@ -54,12 +63,14 @@ console.log("youtube.js loaded");
         display: none !important;
         }
 
+        /* Remove Shorts shelf from appearing */
         ytd-reel-shelf-renderer {
           display: none !important;
           visibility: hidden !important;
           height: 0 !important;
         }
         
+        /* Focus Mode button */
         #focus-mode-btn {
           margin-left: 8px;
           height: 36px;
@@ -73,11 +84,12 @@ console.log("youtube.js loaded");
           font-size: 14px;
           white-space: nowrap;
         }
-
+        /* Hover effect for button */
         #focus-mode-btn:hover {
           opacity: 0.9;
         }
 
+        /* Centered text when focus mode is ON */
         #realblocker-focus-text {
           position: fixed;
           top: 50%;
@@ -93,18 +105,20 @@ console.log("youtube.js loaded");
           font-family: Arial, sans-serif;
         }
 
+        /* Smoother transition for button */
         #focus-mode-btn {
           background: #0f0f0f;
           border: 1px solid rgba(255,255,255,0.15);
           box-shadow: 0 0 0 rgba(255,255,255,0);
           transition: all 0.2s ease;
         }
-        
+        /* Glow + border change for button */
         #focus-mode-btn:hover {
           box-shadow: 0 0 12px rgba(255,255,255,0.15);
           border-color: rgba(255,255,255,0.3);
         }
 
+        /* Glass + gradient look for button */
         #focus-mode-btn {
           height: 38px;
           padding: 0 18px;
@@ -127,7 +141,7 @@ console.log("youtube.js loaded");
           gap: 8px;
         }
         
-        /* glow */
+        /* Background glows when mouse is hovering */
         #focus-mode-btn::before {
           content: "";
           position: absolute;
@@ -139,27 +153,29 @@ console.log("youtube.js loaded");
           transition: opacity 0.25s ease;
         }
         
-        /* hover effect */
+        /* Glow effect on hover */
         #focus-mode-btn:hover {
           transform: translateY(-1px);
           box-shadow: 0 0 20px rgba(100,140,255,0.25);
         }
         
+        /* Display glow layer while hovering */
         #focus-mode-btn:hover::before {
           opacity: 0.15;
         }
         
-        /* click */
+        /* Click animation */
         #focus-mode-btn:active {
           transform: scale(0.96);
         }
         
-        /* ACTIVE (Focus ON) */
+        /* Focus mode is ON  */
         #focus-mode-btn.active {
           background: linear-gradient(135deg, rgba(80,120,255,0.4), rgba(160,100,255,0.4));
           box-shadow: 0 0 18px rgba(120,150,255,0.4);
           border-color: rgba(255,255,255,0.3);
         }
+        /* Spacing/Sizing adjustments */
         #focus-mode-btn {
           padding: 0 16px;
           height: 38px;
@@ -168,12 +184,14 @@ console.log("youtube.js loaded");
           letter-spacing: 0.3px;
         }
 
+        /* Alternate active style */
         #focus-mode-btn.active {
           background: linear-gradient(135deg, #1f1f1f, #2a2a2a);
           border-color: rgba(255,255,255,0.4);
           box-shadow: 0 0 14px rgba(255,255,255,0.2);
         }
 
+        /* Subtext styling inside focus overlay */
         #realblocker-focus-text .sub {
           font-size: 14px;
           opacity: 0.7;
@@ -181,6 +199,7 @@ console.log("youtube.js loaded");
           font-weight: 400;
         }
 
+        /* Hide youtube sidebar navigation in Focus Mode */
         html.realblocker-focus ytd-guide-renderer,
         html.realblocker-focus ytd-mini-guide-renderer,
         html.realblocker-focus #guide,
@@ -188,11 +207,13 @@ console.log("youtube.js loaded");
           display: none !important;
         }
 
+        /* Hide youtubes home page */
         html.realblocker-focus.realblocker-home ytd-browse[page-subtype="home"],
         html.realblocker-focus.realblocker-home ytd-rich-grid-renderer {
           display: none !important;
         }
 
+        /* Hide reccomendations, comments, etc */
         html.realblocker-focus.realblocker-watch #secondary,
         html.realblocker-focus.realblocker-watch #related,
         html.realblocker-focus.realblocker-watch #comments,
@@ -201,6 +222,7 @@ console.log("youtube.js loaded");
           display: none !important;
         }
 
+        /* Center main video player */
         html.realblocker-focus.realblocker-watch #columns,
         html.realblocker-focus.realblocker-watch #primary,
         html.realblocker-focus.realblocker-watch #primary-inner {
@@ -209,7 +231,7 @@ console.log("youtube.js loaded");
         }
       `;
     }
-
+    // Apply style 
     updateStyle();
 
     // ---------- FOCUS TEXT ----------
