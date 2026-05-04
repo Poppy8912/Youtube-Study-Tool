@@ -235,6 +235,7 @@ console.log("youtube.js loaded");
     updateStyle();
 
     // ---------- FOCUS TEXT ----------
+    // Create text when focus mode is ON
     let focusText = document.getElementById("realblocker-focus-text");
     if (!focusText) {
       focusText = document.createElement("div");
@@ -246,6 +247,7 @@ console.log("youtube.js loaded");
       document.documentElement.appendChild(focusText);
     }
 
+    // Update page depending on current page + focus state
     function updatePageClasses() {
       const root = document.documentElement;
 
@@ -258,6 +260,7 @@ console.log("youtube.js loaded");
     }
 
     // ---------- BUTTON ----------
+    // Location of focus mode button in youtube header
     function getButtonHost() {
       return (
         document.querySelector("#buttons.ytd-masthead") ||
@@ -266,6 +269,7 @@ console.log("youtube.js loaded");
       );
     }
 
+    // Create and attach focus mode toggle button 
     function ensureFocusButton() {
       const host = getButtonHost();
       if (!host) return;
@@ -277,6 +281,7 @@ console.log("youtube.js loaded");
         btn.id = "focus-mode-btn";
         btn.type = "button";
 
+        // Turn focus mode ON when button is clicked
         btn.addEventListener("click", async (e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -287,6 +292,7 @@ console.log("youtube.js loaded");
         });
       }
 
+      // Make sure button stays in the right location
       if (btn.parentElement !== host) {
         host.appendChild(btn);
       }
@@ -294,11 +300,13 @@ console.log("youtube.js loaded");
       updateButtonText();
     }
 
+    // Labeling for button on/off
     function updateButtonText() {
       const btn = document.getElementById("focus-mode-btn");
       if (btn) btn.textContent = focusMode ? "Focus On" : "Focus Off";
     }
 
+    // Delay button injection 
     function scheduleButtonCheck() {
       if (buttonCheckScheduled) return;
       buttonCheckScheduled = true;
@@ -309,6 +317,7 @@ console.log("youtube.js loaded");
       }, 300);
     }
 
+    // Hide "Shorts" tab under youtube header
     function hideShortsTab() {
       document.querySelectorAll("yt-chip-cloud-chip-renderer").forEach(chip => {
         const text = chip.innerText.trim().toLowerCase();
@@ -318,6 +327,7 @@ console.log("youtube.js loaded");
       });
     }
     // ---------- LIGHT SHORTS CLEANUP ----------
+    // Hide Shorts-related links from sidebar/navigation
     function hideShortsNavItems() {
       document
         .querySelectorAll('a[title="Shorts"], a[href="/shorts"], a[href^="/shorts/"]')
@@ -329,6 +339,7 @@ console.log("youtube.js loaded");
         });
     }
 
+    // Remove "Playables" game section from homepage
     function removePlayables() {
       document.querySelectorAll("ytd-rich-section-renderer").forEach(el => {
         const text = el.innerText?.toLowerCase() || "";
@@ -342,10 +353,11 @@ console.log("youtube.js loaded");
       });
     }
 
+    // Remove any Shorts containers when detected
     function killShortsImmediately(node) {
       if (!node || node.nodeType !== 1) return;
     
-      // climb UP first (critical fix)
+      // Climb up parent container
       let container = node.closest?.(
         "ytd-rich-section-renderer, ytd-item-section-renderer, ytd-shelf-renderer"
       );
@@ -363,6 +375,7 @@ console.log("youtube.js loaded");
     }
 
     // ---------- SEARCH / NAV BLOCK ----------
+    // Detecting if user searches for Shorts
     function searchLooksLikeShorts() {
       const input =
         document.querySelector('input[name="search_query"]') ||
@@ -373,6 +386,7 @@ console.log("youtube.js loaded");
       return value === "shorts" || value.startsWith("shorts ");
     }
 
+   // Block user from viewing Shorts
     document.addEventListener(
       "submit",
       (e) => {
@@ -388,6 +402,7 @@ console.log("youtube.js loaded");
       true
     );
 
+    // Block clicking Shorts links or searching Shorts via button
     document.addEventListener(
       "click",
       (e) => {
@@ -409,6 +424,7 @@ console.log("youtube.js loaded");
       true
     );
 
+    // Block pressing Enter if searching Shorts
     document.addEventListener(
       "keydown",
       (e) => {
@@ -430,6 +446,7 @@ console.log("youtube.js loaded");
       },
       true
     );
+    // Remove Shorts shelf from homepage
     function removeShortsShelf() {
       document.querySelectorAll("ytd-reel-shelf-renderer").forEach(el => {
         const container = el.closest(
@@ -443,6 +460,7 @@ console.log("youtube.js loaded");
       });
     }
     // ---------- APPLY ----------
+    // Apply cleanup + UI logic
     function applyPageState() {
       if (redirectShorts()) return;
       updatePageClasses();
@@ -452,8 +470,11 @@ console.log("youtube.js loaded");
       removeShortsShelf();
       removePlayables();
     }
+
+    // Prevent repeated cleanup calls
     let shortsCleanupScheduled = false;
 
+    // Delay Shorts cleanup to stabilize DOM
     function scheduleShortsCleanup() {
       if (shortsCleanupScheduled) return;
     
@@ -465,7 +486,7 @@ console.log("youtube.js loaded");
       }, 150);
     }
 
-
+    // Schedule page  updates efficiently
     function scheduleApply() {
       if (pageApplyScheduled) return;
       pageApplyScheduled = true;
@@ -477,12 +498,14 @@ console.log("youtube.js loaded");
     }
 
     // ---------- URL CHANGE ----------
+    // Detect SPA navigation changes on youtube
     function handleUrlChange() {
       if (location.href === lastUrl) return;
       lastUrl = location.href;
       scheduleApply();
     }
 
+    // Hook into history navigation
     const originalPushState = history.pushState;
     const originalReplaceState = history.replaceState;
 
@@ -500,6 +523,7 @@ console.log("youtube.js loaded");
     window.addEventListener("yt-navigate-finish", handleUrlChange);
 
     // ---------- SMALL OBSERVER ----------
+    // Watch DOM for new elements and remove Shorts dynamically
     const observer = new MutationObserver((mutations) => {
       scheduleButtonCheck();
       hideShortsTab();
@@ -520,6 +544,7 @@ console.log("youtube.js loaded");
     });
 
     // ---------- STORAGE ----------
+    // Sync focus mdoe state across tabs
     chrome.storage.onChanged.addListener((changes, area) => {
       if (area !== "sync") return;
 
@@ -530,6 +555,7 @@ console.log("youtube.js loaded");
     });
 
     // ---------- INIT ----------
+    // Initial load
     if (redirectShorts()) return;
     applyPageState();
 
