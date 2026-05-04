@@ -4,10 +4,10 @@ A browser extension that removes Youtube Shorts and distractions to help you sta
 ## Demo
 
 ### Homepage (Before)
-![Homepage Before](./browser_screenshots/homepage-before.png)
+![Homepage Before](./browser_screenshots/Homepage_before.png)
 
 ### Homepage (After)
-![Homepage After](./browser_screenshots/homepage-after.png)
+![Homepage After](./browser_screenshots/Homepage_after.png)
 ### Focus Mode
 ![Focus Mode](./browser_screenshots/focus-mode.png
 
