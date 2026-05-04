@@ -229,6 +229,7 @@ console.log("youtube.js loaded");
           max-width: 1000px !important;
           margin: 0 auto !important;
         }
+        }
       `;
     }
     // Apply style 
@@ -339,38 +340,23 @@ console.log("youtube.js loaded");
         });
     }
 
-    // Remove "Playables" game section from homepage
-    function removePlayables() {
-      document.querySelectorAll("ytd-rich-section-renderer").forEach(el => {
-        const text = el.innerText?.toLowerCase() || "";
-    
-        if (
-          text.includes("playables") ||
-          text.includes("instant games")
-        ) {
-          el.remove();
-        }
-      });
-    }
 
     // Remove any Shorts containers when detected
     function killShortsImmediately(node) {
       if (!node || node.nodeType !== 1) return;
-    
-      // Climb up parent container
-      let container = node.closest?.(
-        "ytd-rich-section-renderer, ytd-item-section-renderer, ytd-shelf-renderer"
+
+      const container = node.closest(
+        "ytd-rich-section-renderer"
       );
-    
-      if (!container) container = node;
-    
-      const hasShorts =
-        container.querySelector?.('a[href^="/shorts"]') ||
-        container.innerText?.toLowerCase().includes("shorts") ||
-        container.querySelector?.('yt-icon[icon="yt-icons:shorts"]');
-    
+      if (!container) return;
+      const hasShorts = 
+      container.querySelector("ytd-reel-shelf-renderer") ||
+      container.querySelector("ytd-rich-shelf-renderer") ||
+      container.querySelector('a[href^="/shorts"]') ||
+      container.querySelector('yt-icon[icon="yt-icons:shorts"]');
+      
       if (hasShorts) {
-        container.remove();
+        container.style.display="none";
       }
     }
 
@@ -446,19 +432,22 @@ console.log("youtube.js loaded");
       },
       true
     );
-    // Remove Shorts shelf from homepage
+
+    // Remove empty shorts container
     function removeShortsShelf() {
-      document.querySelectorAll("ytd-reel-shelf-renderer").forEach(el => {
-        const container = el.closest(
-          "ytd-rich-section-renderer, ytd-item-section-renderer, ytd-shelf-renderer"
-        );
-        if (container) {
-          container.remove();
-        } else {
-          el.remove();
+      document.querySelectorAll(
+        "ytd-rich-section-renderer, ytd-item-section-renderer"
+      ).forEach(container => {
+    
+        const title = container.querySelector("#title");
+
+        if (title && title.textContent.trim().toLowerCase() === "shorts") {
+          container.style.display = "none";
         }
       });
     }
+    
+
     // ---------- APPLY ----------
     // Apply cleanup + UI logic
     function applyPageState() {
@@ -468,7 +457,6 @@ console.log("youtube.js loaded");
       hideShortsNavItems();
       hideShortsTab();
       removeShortsShelf();
-      removePlayables();
     }
 
     // Prevent repeated cleanup calls
@@ -524,25 +512,27 @@ console.log("youtube.js loaded");
 
     // ---------- SMALL OBSERVER ----------
     // Watch DOM for new elements and remove Shorts dynamically
+
     const observer = new MutationObserver((mutations) => {
+      if (location.pathname === "/watch") return;
       scheduleButtonCheck();
       hideShortsTab();
       scheduleShortsCleanup();
-    
+      removeShortsShelf();
+
       for (const m of mutations) {
         for (const node of m.addedNodes) {
           killShortsImmediately(node);
         }
       }
-      removePlayables();
     });
     
-
+    if (location.pathname !== "/watch"){
     observer.observe(document.documentElement, {
       childList: true,
       subtree: true
     });
-
+    }
     // ---------- STORAGE ----------
     // Sync focus mdoe state across tabs
     chrome.storage.onChanged.addListener((changes, area) => {
