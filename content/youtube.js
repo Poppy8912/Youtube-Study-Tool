@@ -7,7 +7,7 @@ console.log("youtube.js loaded");
     const settings = await chrome.storage.sync.get({
       enabled: true,
       youtube: true,
-      focusMode: false
+      focusMode: false,
     });
     // Exit early if extension or Youtube blocking is disabled
     if (!settings.enabled || !settings.youtube) return;
@@ -28,10 +28,16 @@ console.log("youtube.js loaded");
     const isShorts = (url = location.href) => {
       try {
         const parsed = new URL(url, location.origin);
-        return parsed.pathname === "/shorts" || parsed.pathname.startsWith("/shorts/");
+        return (
+          parsed.pathname === "/shorts" ||
+          parsed.pathname.startsWith("/shorts/")
+        );
       } catch {
         // Fallback for malformed URLs
-        return location.pathname === "/shorts" || location.pathname.startsWith("/shorts/");
+        return (
+          location.pathname === "/shorts" ||
+          location.pathname.startsWith("/shorts/")
+        );
       }
     };
 
@@ -69,7 +75,7 @@ console.log("youtube.js loaded");
           visibility: hidden !important;
           height: 0 !important;
         }
-        
+
         /* Focus Mode button */
         #focus-mode-btn {
           margin-left: 8px;
@@ -124,23 +130,23 @@ console.log("youtube.js loaded");
           padding: 0 18px;
           border-radius: 999px;
           border: 1px solid rgba(255,255,255,0.15);
-        
+
           color: white;
           font-weight: 600;
           font-size: 14px;
           letter-spacing: 0.3px;
-        
+
           background: linear-gradient(135deg, rgba(30,30,30,0.6), rgba(80,120,255,0.25));
           backdrop-filter: blur(8px);
-        
+
           cursor: pointer;
           transition: all 0.25s ease;
-        
+
           display: flex;
           align-items: center;
           gap: 8px;
         }
-        
+
         /* Background glows when mouse is hovering */
         #focus-mode-btn::before {
           content: "";
@@ -152,23 +158,23 @@ console.log("youtube.js loaded");
           z-index: -1;
           transition: opacity 0.25s ease;
         }
-        
+
         /* Glow effect on hover */
         #focus-mode-btn:hover {
           transform: translateY(-1px);
           box-shadow: 0 0 20px rgba(100,140,255,0.25);
         }
-        
+
         /* Display glow layer while hovering */
         #focus-mode-btn:hover::before {
           opacity: 0.15;
         }
-        
+
         /* Click animation */
         #focus-mode-btn:active {
           transform: scale(0.96);
         }
-        
+
         /* Focus mode is ON  */
         #focus-mode-btn.active {
           background: linear-gradient(135deg, rgba(80,120,255,0.4), rgba(160,100,255,0.4));
@@ -232,7 +238,7 @@ console.log("youtube.js loaded");
         }
       `;
     }
-    // Apply style 
+    // Apply style
     updateStyle();
 
     // ---------- FOCUS TEXT ----------
@@ -270,7 +276,7 @@ console.log("youtube.js loaded");
       );
     }
 
-    // Create and attach focus mode toggle button 
+    // Create and attach focus mode toggle button
     function ensureFocusButton() {
       const host = getButtonHost();
       if (!host) return;
@@ -307,7 +313,7 @@ console.log("youtube.js loaded");
       if (btn) btn.textContent = focusMode ? "Focus On" : "Focus Off";
     }
 
-    // Delay button injection 
+    // Delay button injection
     function scheduleButtonCheck() {
       if (buttonCheckScheduled) return;
       buttonCheckScheduled = true;
@@ -320,43 +326,44 @@ console.log("youtube.js loaded");
 
     // Hide "Shorts" tab under youtube header
     function hideShortsTab() {
-      document.querySelectorAll("yt-chip-cloud-chip-renderer").forEach(chip => {
-        const text = chip.innerText.trim().toLowerCase();
-        if (text === "shorts") {
-          chip.style.display = "none";
-        }
-      });
+      document
+        .querySelectorAll("yt-chip-cloud-chip-renderer")
+        .forEach((chip) => {
+          const text = chip.innerText.trim().toLowerCase();
+          if (text === "shorts") {
+            chip.style.display = "none";
+          }
+        });
     }
     // ---------- LIGHT SHORTS CLEANUP ----------
     // Hide Shorts-related links from sidebar/navigation
     function hideShortsNavItems() {
       document
-        .querySelectorAll('a[title="Shorts"], a[href="/shorts"], a[href^="/shorts/"]')
+        .querySelectorAll(
+          'a[title="Shorts"], a[href="/shorts"], a[href^="/shorts/"]',
+        )
         .forEach((link) => {
           const item = link.closest(
-            "ytd-guide-entry-renderer, ytd-mini-guide-entry-renderer, tp-yt-paper-item, ytd-rich-section-renderer, ytd-item-section-renderer, ytd-shelf-renderer"
+            "ytd-guide-entry-renderer, ytd-mini-guide-entry-renderer, tp-yt-paper-item, ytd-rich-section-renderer, ytd-item-section-renderer, ytd-shelf-renderer",
           );
           if (item) item.style.display = "none";
         });
     }
 
-
     // Remove any Shorts containers when detected
     function killShortsImmediately(node) {
       if (!node || node.nodeType !== 1) return;
 
-      const container = node.closest(
-        "ytd-rich-section-renderer"
-      );
+      const container = node.closest("ytd-rich-section-renderer");
       if (!container) return;
-      const hasShorts = 
-      container.querySelector("ytd-reel-shelf-renderer") ||
-      container.querySelector("ytd-rich-shelf-renderer") ||
-      container.querySelector('a[href^="/shorts"]') ||
-      container.querySelector('yt-icon[icon="yt-icons:shorts"]');
-      
+      const hasShorts =
+        container.querySelector("ytd-reel-shelf-renderer") ||
+        container.querySelector("ytd-rich-shelf-renderer") ||
+        container.querySelector('a[href^="/shorts"]') ||
+        container.querySelector('yt-icon[icon="yt-icons:shorts"]');
+
       if (hasShorts) {
-        container.style.display="none";
+        container.style.display = "none";
       }
     }
 
@@ -372,7 +379,7 @@ console.log("youtube.js loaded");
       return value === "shorts" || value.startsWith("shorts ");
     }
 
-   // Block user from viewing Shorts
+    // Block user from viewing Shorts
     document.addEventListener(
       "submit",
       (e) => {
@@ -385,14 +392,16 @@ console.log("youtube.js loaded");
           location.replace(SHORTS_HOME_URL);
         }
       },
-      true
+      true,
     );
 
     // Block clicking Shorts links or searching Shorts via button
     document.addEventListener(
       "click",
       (e) => {
-        const shortsLink = e.target.closest('a[href="/shorts"], a[href^="/shorts/"]');
+        const shortsLink = e.target.closest(
+          'a[href="/shorts"], a[href^="/shorts/"]',
+        );
         if (shortsLink) {
           e.preventDefault();
           e.stopPropagation();
@@ -400,14 +409,16 @@ console.log("youtube.js loaded");
           return;
         }
 
-        const searchButton = e.target.closest("#search-icon-legacy, button[aria-label='Search']");
+        const searchButton = e.target.closest(
+          "#search-icon-legacy, button[aria-label='Search']",
+        );
         if (searchButton && searchLooksLikeShorts()) {
           e.preventDefault();
           e.stopPropagation();
           location.replace(SHORTS_HOME_URL);
         }
       },
-      true
+      true,
     );
 
     // Block pressing Enter if searching Shorts
@@ -430,23 +441,35 @@ console.log("youtube.js loaded");
           }
         }
       },
-      true
+      true,
     );
 
     // Remove empty shorts container
     function removeShortsShelf() {
-      document.querySelectorAll(
-        "ytd-rich-section-renderer, ytd-item-section-renderer"
-      ).forEach(container => {
-    
-        const title = container.querySelector("#title");
+      document
+        .querySelectorAll(
+          "ytd-rich-section-renderer, ytd-item-section-renderer",
+        )
+        .forEach((container) => {
+          // Check for "Shorts" title in various title elements
+          const title = container.querySelector(
+            "#title, #title-container, yt-formatted-string#title, span#title",
+          );
+          if (title && title.textContent.trim().toLowerCase() === "shorts") {
+            container.style.display = "none";
+            return;
+          }
 
-        if (title && title.textContent.trim().toLowerCase() === "shorts") {
-          container.style.display = "none";
-        }
-      });
+          // Hide if the container has a hidden reel/rich-shelf inside
+          // (the CSS hides the shelf content but leaves the wrapper empty)
+          if (
+            container.querySelector("ytd-reel-shelf-renderer") ||
+            container.querySelector("ytd-rich-shelf-renderer")
+          ) {
+            container.style.display = "none";
+          }
+        });
     }
-    
 
     // ---------- APPLY ----------
     // Apply cleanup + UI logic
@@ -465,9 +488,9 @@ console.log("youtube.js loaded");
     // Delay Shorts cleanup to stabilize DOM
     function scheduleShortsCleanup() {
       if (shortsCleanupScheduled) return;
-    
+
       shortsCleanupScheduled = true;
-    
+
       setTimeout(() => {
         shortsCleanupScheduled = false;
         removeShortsShelf();
@@ -526,12 +549,12 @@ console.log("youtube.js loaded");
         }
       }
     });
-    
-    if (location.pathname !== "/watch"){
-    observer.observe(document.documentElement, {
-      childList: true,
-      subtree: true
-    });
+
+    if (location.pathname !== "/watch") {
+      observer.observe(document.documentElement, {
+        childList: true,
+        subtree: true,
+      });
     }
     // ---------- STORAGE ----------
     // Sync focus mdoe state across tabs
@@ -548,7 +571,6 @@ console.log("youtube.js loaded");
     // Initial load
     if (redirectShorts()) return;
     applyPageState();
-
   } catch (err) {
     console.error(err);
   }
